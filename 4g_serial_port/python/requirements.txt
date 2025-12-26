@@ -1,0 +1,3 @@
+# EC800K DFOTA 测试脚本依赖
+pyserial>=3.5
+

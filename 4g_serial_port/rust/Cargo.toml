@@ -1,0 +1,10 @@
+[package]
+name = "ec800k-dfota-test"
+version = "1.0.0"
+edition = "2021"
+description = "EC800K/EG800K FOTA升级测试脚本 - Rust版"
+
+[dependencies]
+serialport = "4.3"
+regex = "1.10"
+chrono = "0.4"
