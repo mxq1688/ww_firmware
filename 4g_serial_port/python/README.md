@@ -1,186 +1,56 @@
-# EC800K DFOTA 测试工具
+# EC800K/EG800K FOTA 升级工具
 
-基于 **Quectel LTE Standard(A)系列 DFOTA 升级指导 V1.4** 文档开发的多语言串口测试脚本。
+基于 Quectel LTE Standard(A) 系列 DFOTA 升级指导开发的 Python 串口工具。
 
-## 📁 项目结构
-
-```
-4g_serial_port/
-├── ec800k_dfota_test.py      # Python版 (推荐)
-├── requirements.txt          # Python依赖
-├── README.md                 # 本文件
-│
-├── nodejs/                   # Node.js版
-│   ├── ec800k_dfota_test.js
-│   └── package.json
-│
-├── golang/                   # Go版
-│   ├── main.go
-│   └── go.mod
-│
-├── rust/                     # Rust版
-│   ├── src/main.rs
-│   └── Cargo.toml
-│
-├── c/                        # C版
-│   ├── ec800k_dfota_test.c
-│   └── Makefile
-│
-├── csharp/                   # C#版
-│   ├── EC800KDfotaTest.cs
-│   └── EC800KDfotaTest.csproj
-│
-└── java/                     # Java版
-    ├── src/main/java/EC800KDfotaTest.java
-    └── pom.xml
-```
-
-## 🚀 各语言快速开始
-
-### Python (推荐)
+## 安装
 
 ```bash
 pip install pyserial
-python ec800k_dfota_test.py /dev/ttyUSB0 test
 ```
 
-### Node.js
+## 使用方法
 
 ```bash
-cd nodejs
-npm install
-node ec800k_dfota_test.js /dev/ttyUSB0 test
+python quick_fota.py <串口> <URL> [mode] [timeout]
 ```
 
-### Go
+### 参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| 串口 | 串口号，如 COM8 | 必填 |
+| URL | FOTA固件下载地址 (HTTP) | 必填 |
+| mode | 0=不自动重启, 1=自动重启 | 1 |
+| timeout | 超时时间(秒) | 50 |
+
+### 示例
 
 ```bash
-cd golang
-go mod tidy
-go run main.go /dev/ttyUSB0 test
+# 升级
+python quick_fota.py COM8 "http://server/signed_A04-A09.mini_1"
+
+# 降级  
+python quick_fota.py COM8 "http://server/signed_A09-A04.mini_1"
+
+# 不自动重启，超时60秒
+python quick_fota.py COM8 "http://server/firmware.mini_1" 0 60
 ```
 
-### Rust
+## 注意事项
 
-```bash
-cd rust
-cargo run -- /dev/ttyUSB0 test
-```
+- **仅支持 HTTP**，MiniFOTA (4MB Flash) 不支持 HTTPS
+- URL 最大长度 128 字符 (MiniFOTA 限制)
+- 升级过程中请勿断电
+- 升级完成后模块会自动重启 (mode=1)
 
-### C
-
-```bash
-cd c
-make
-./ec800k_dfota_test /dev/ttyUSB0 test
-```
-
-### C#
-
-```bash
-cd csharp
-dotnet run -- /dev/ttyUSB0 test
-```
-
-### Java
-
-```bash
-cd java
-mvn compile exec:java -Dexec.args="/dev/ttyUSB0 test"
-```
-
-## 📋 功能说明
-
-所有语言版本都支持以下功能：
-
-| 命令 | 说明 |
-|------|------|
-| `test` | 基本AT通信测试、模块信息查询、网络状态检查 |
-| `info` | 显示DFOTA错误码说明 |
-| `dfota <URL>` | 通过HTTP/FTP下载并执行DFOTA升级 |
-
-## 🔧 支持的AT命令
-
-| 命令 | 功能 |
-|------|------|
-| `AT` | 通信测试 |
-| `ATI` | 模块信息 |
-| `AT+GSN` | 查询IMEI |
-| `AT+CGMR` | 固件版本 |
-| `AT+CPIN?` | SIM卡状态 |
-| `AT+CREG?` | 网络注册状态 |
-| `AT+CSQ` | 信号强度 |
-| `AT+QFOTADL` | DFOTA升级 |
-
-## 📊 语言对比
-
-| 语言 | 库/框架 | 优点 | 适用场景 |
-|------|---------|------|----------|
-| **Python** | pyserial | 最简单，跨平台 | 快速开发、测试 |
-| **Node.js** | serialport | 异步，事件驱动 | Web集成 |
-| **Go** | go-serial | 编译为单文件 | 部署工具 |
-| **Rust** | serialport-rs | 高性能，安全 | 嵌入式工具 |
-| **C** | termios/Win32 | 最底层，最快 | 资源受限环境 |
-| **C#** | System.IO.Ports | Windows友好 | Windows工具 |
-| **Java** | jSerialComm | 跨平台，企业级 | 企业应用 |
-
-## 📖 DFOTA 升级流程
-
-1. 确保模块已入网（`AT+CREG?` 返回 1 或 5）
-2. 准备DFOTA差分包并上传到服务器
-3. 执行 `AT+QFOTADL="<URL>"` 命令
-4. 等待模块下载、校验并重启
-
-## ⚠️ 错误码速查
-
-### DFOTA 升级错误
+## 错误码速查
 
 | 错误码 | 说明 |
 |--------|------|
-| 0 | 升级成功 |
+| 0 | 成功 |
 | 504 | 升级失败 |
-| 505 | 包校验出错 |
-| 506 | 固件MD5检查错误 |
-| 507 | 包版本不匹配 |
-| 552 | 包项目名不匹配 |
-| 553 | 包基线名不匹配 |
-
-### HTTP 下载错误
-
-| 错误码 | 说明 |
-|--------|------|
-| 0 | 下载成功 |
-| 701 | 未知错误 |
-| 702 | 超时 |
-| 711 | URL错误 |
+| 505 | 包校验错误 |
+| 507 | 版本不匹配 |
+| 701 | HTTP未知错误 |
 | 714 | DNS错误 |
-| 716 | Socket连接错误 |
-
-### FTP 下载错误
-
-| 错误码 | 说明 |
-|--------|------|
-| 0 | 下载成功 |
-| 601 | 未知错误 |
-| 602 | 超时 |
-| 611 | 打开文件失败 |
-| 625 | 登录失败 |
-
-## 🔌 串口路径示例
-
-| 操作系统 | 示例路径 |
-|----------|----------|
-| macOS | `/dev/tty.usbserial-1420` |
-| Linux | `/dev/ttyUSB0`, `/dev/ttyACM0` |
-| Windows | `COM3`, `COM4` |
-
-## 📝 注意事项
-
-- URL最大长度为700字符
-- DFOTA升级过程中请勿断电
-- 升级完成后模块会自动重启
-- 建议在信号良好的环境下进行升级
-
-## 📚 参考文档
-
-- Quectel_LTE_Standard(A)系列_DFOTA_升级指导_V1.4.pdf
+| 727 | 等待数据超时 |
